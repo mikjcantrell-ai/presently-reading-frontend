@@ -1,0 +1,31 @@
+<section class="news-page">
+  <div class="news-header">
+    <span class="section-label">Updates</span>
+    <h1 class="page-title">Latest News</h1>
+    <p class="page-subtitle">The latest dispatches from Presently Reading.</p>
+  </div>
+
+  <div class="news-content">
+    <div class="loading" *ngIf="loading">Loading dispatches...</div>
+    <div class="error-msg" *ngIf="error">{{ error }}</div>
+
+    <div class="news-list" *ngIf="!loading && !error">
+      <div class="news-empty" *ngIf="newsPosts.length === 0">
+        <p>No news yet. Check back soon!</p>
+      </div>
+
+      <article class="news-card" *ngFor="let post of newsPosts">
+        <div class="news-image-wrapper" *ngIf="post.imageUrl">
+          <img [src]="post.imageUrl" [alt]="post.title" class="news-image" loading="lazy" />
+        </div>
+        <div class="news-body">
+          <div class="news-meta">
+            <span class="news-date">{{ post.createdAt | date:'longDate' }}</span>
+          </div>
+          <h2 class="news-title">{{ post.title }}</h2>
+          <div class="news-text" [innerHTML]="post.content | safeHtml"></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>

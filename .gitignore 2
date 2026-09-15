@@ -1,0 +1,12 @@
+# Build output
+dist/
+.angular/
+
+# Dependencies
+node_modules/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+*.iml
