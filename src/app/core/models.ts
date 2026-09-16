@@ -14,6 +14,7 @@ export interface Book {
   releaseYear?: number;
   authorName?: string;
   featuredStatus: boolean;
+  readingStatus?: string;
   displayOrder: number;
   description?: string;
   fullReview?: string;

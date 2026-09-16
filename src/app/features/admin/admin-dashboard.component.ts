@@ -66,6 +66,9 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
         <button class="admin-tab" [class.active]="tab==='news'" (click)="switchToNews()" id="news-tab">
           📰 News
         </button>
+        <button class="admin-tab" [class.active]="tab==='settings'" (click)="tab='settings'" id="settings-tab">
+          ⚙️ Settings
+        </button>
         <button class="admin-tab" [class.active]="tab==='author'" (click)="switchToAuthor()" id="author-tab">
           🎵 Author Profile
         </button>
@@ -533,6 +536,39 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
               </div>
             </div>
             <div *ngIf="newsPosts.length === 0" class="empty-state">No news posts found.</div>
+          </div>
+        </div>
+
+        <!-- ── SETTINGS TAB ─────────────────────────────────────────────── -->
+        <div *ngIf="tab==='settings'">
+          <div class="section-head">
+            <h2>Settings</h2>
+          </div>
+          <div class="author-form" style="max-width: 500px;">
+            <h3 style="margin-top: 0; font-family: var(--font-serif); font-size: 1.1rem; color: #2a2017; margin-bottom: 6px;">Change Password</h3>
+            <p class="content-intro" style="margin-bottom: 20px;">Update your admin dashboard password.</p>
+            
+            <div class="af-group">
+              <label class="af-label">Old Password</label>
+              <input class="af-input" type="password" [(ngModel)]="pwdOld" id="af-old-pwd" placeholder="Enter old password" />
+            </div>
+            <div class="af-group">
+              <label class="af-label">New Password</label>
+              <input class="af-input" type="password" [(ngModel)]="pwdNew" id="af-new-pwd" placeholder="Enter new password" />
+            </div>
+            <div class="af-group">
+              <label class="af-label">Confirm New Password</label>
+              <input class="af-input" type="password" [(ngModel)]="pwdConfirm" id="af-confirm-pwd" placeholder="Confirm new password" />
+            </div>
+            
+            <div class="error-msg" *ngIf="pwdError">{{ pwdError }}</div>
+            <div class="save-msg" *ngIf="pwdSuccess" style="color: #2ecc71;">{{ pwdSuccess }}</div>
+            
+            <div class="af-actions">
+              <button class="btn-save" (click)="changePassword()" [disabled]="pwdLoading" id="save-pwd-btn">
+                {{ pwdLoading ? 'Updating…' : '💾 Update Password' }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1140,7 +1176,7 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
   `]
 })
 export class AdminDashboardComponent implements OnInit {
-  tab: 'books' | 'quotes' | 'messages' | 'content' | 'news' | 'author' = 'books';
+  tab: 'books' | 'quotes' | 'messages' | 'content' | 'news' | 'settings' | 'author' = 'books';
 
   books: Book[] = [];
   booksLoading = false;
@@ -1193,6 +1229,14 @@ export class AdminDashboardComponent implements OnInit {
 
   sectionTypes = SECTION_TYPES;
 
+  // State - Settings
+  pwdOld = '';
+  pwdNew = '';
+  pwdConfirm = '';
+  pwdLoading = false;
+  pwdError = '';
+  pwdSuccess = '';
+
   constructor(
     private http: HttpClient,
     private router: Router,
@@ -1219,6 +1263,41 @@ export class AdminDashboardComponent implements OnInit {
       sessionStorage.removeItem('md_admin_creds');
     }
     this.router.navigate(['/admin/login']);
+  }
+
+  changePassword(): void {
+    if (!this.pwdOld || !this.pwdNew || !this.pwdConfirm) {
+      this.pwdError = 'Please fill in all fields.';
+      return;
+    }
+    if (this.pwdNew !== this.pwdConfirm) {
+      this.pwdError = 'New password and confirm password do not match.';
+      return;
+    }
+
+    this.pwdLoading = true;
+    this.pwdError = '';
+    this.pwdSuccess = '';
+
+    const payload = {
+      oldPassword: this.pwdOld,
+      newPassword: this.pwdNew
+    };
+
+    this.http.post<{message: string}>(`${API_BASE}/api/admin/change-password`, payload, { headers: this.headers }).subscribe({
+      next: (res) => {
+        this.pwdLoading = false;
+        this.pwdSuccess = res.message + '. Logging out in 3 seconds...';
+        this.pwdOld = '';
+        this.pwdNew = '';
+        this.pwdConfirm = '';
+        setTimeout(() => this.logout(), 3000);
+      },
+      error: (err) => {
+        this.pwdLoading = false;
+        this.pwdError = err.error?.error || 'Failed to change password.';
+      }
+    });
   }
 
   // ── Books ─────────────────────────────────────────────────────────────────
