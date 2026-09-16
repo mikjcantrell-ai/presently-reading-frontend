@@ -1218,7 +1218,7 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
   `]
 })
 export class AdminDashboardComponent implements OnInit {
-  tab: 'books' | 'quotes' | 'messages' | 'content' | 'news' | 'settings' | 'author' = 'books';
+  tab: 'books' | 'quotes' | 'messages' | 'content' | 'genres' | 'news' | 'settings' | 'author' = 'books';
 
   books: Book[] = [];
   booksLoading = false;
