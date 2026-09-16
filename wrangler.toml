@@ -1,3 +1,5 @@
 name = "presently-reading-frontend"
-pages_build_output_dir = "dist/frontend/browser"
 compatibility_date = "2024-09-15"
+
+[assets]
+directory = "dist/frontend/browser"
