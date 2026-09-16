@@ -1,4 +1,1 @@
-http://confettiweather.com/* https://confettiweather.com/:splat 301!
-http://www.confettiweather.com/* https://confettiweather.com/:splat 301!
-/sitemap.xml https://confetti-weather-backend-production.up.railway.app/api/sitemap 200!
 /* /index.html 200
