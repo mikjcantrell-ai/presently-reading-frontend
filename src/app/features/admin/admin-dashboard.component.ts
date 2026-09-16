@@ -63,6 +63,9 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
         <button class="admin-tab" [class.active]="tab==='content'" (click)="switchToContent()" id="content-tab">
           ✏️ Content
         </button>
+        <button class="admin-tab" [class.active]="tab==='genres'" (click)="switchToGenres()" id="genres-tab">
+          ✨ Genres & Tropes
+        </button>
         <button class="admin-tab" [class.active]="tab==='news'" (click)="switchToNews()" id="news-tab">
           📰 News
         </button>
@@ -491,6 +494,45 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
               </div>
             </div>
           </ng-container>
+        </div>
+
+    <!-- ── GENRES TAB ─────────────────────────────────────────────── -->
+        <div *ngIf="tab==='genres'">
+          <div class="section-head">
+            <h2>Genres & Tropes</h2>
+            <button class="btn-add" (click)="loadGenres()" id="refresh-genres-btn">↻ Refresh</button>
+          </div>
+          <p class="content-intro">Edit the favorite genres and tropes that appear on the home page.</p>
+
+          <div class="loading" *ngIf="genresLoading">Loading…</div>
+          <div class="error-msg" *ngIf="genresError">{{ genresError }}</div>
+
+          <div class="author-form" *ngIf="!genresLoading && genresByGroup.length > 0">
+            <ng-container *ngFor="let group of genresByGroup">
+              <div class="inline-form" style="margin-bottom: 24px;">
+                <h3 style="margin-top: 0; margin-bottom: 16px;">Genre {{ group.id }}</h3>
+                
+                <div class="form-grid">
+                  <label>Icon<input [(ngModel)]="group.icon.value" [placeholder]="'e.g. 🐉'" /></label>
+                  <label>Title<input [(ngModel)]="group.title.value" [placeholder]="'e.g. Fantasy'" /></label>
+                  <label class="full">Description
+                    <textarea [(ngModel)]="group.desc.value" rows="2" [placeholder]="'e.g. Epic world-building...'"></textarea>
+                  </label>
+                </div>
+              </div>
+            </ng-container>
+
+            <div class="af-actions" style="margin-top: 16px;">
+              <button class="btn-save" (click)="saveGenres()" [disabled]="genresSaving" id="save-genres-btn">
+                {{ genresSaving ? 'Saving…' : '💾 Save All Genres' }}
+              </button>
+              <span class="af-status" *ngIf="genresStatus"
+                    [class.af-ok]="genresStatus === 'ok'"
+                    [class.af-err]="genresStatus === 'err'">
+                {{ genresStatus === 'ok' ? '✓ Saved! Changes are live.' : '✗ Save failed.' }}
+              </span>
+            </div>
+          </div>
         </div>
 
         <!-- ── NEWS TAB ─────────────────────────────────────────────── -->
@@ -1965,6 +2007,7 @@ export class AdminDashboardComponent implements OnInit {
         this.contentBySection = {};
         this.contentSections  = [];
         for (const item of items) {
+          if (item.section === 'Genres') continue;
           if (!this.contentBySection[item.section]) {
             this.contentBySection[item.section] = [];
             this.contentSections.push(item.section);
@@ -1997,6 +2040,67 @@ export class AdminDashboardComponent implements OnInit {
         this.contentSaving[item.key] = false;
         this.contentStatus[item.key] = 'err';
         setTimeout(() => delete this.contentStatus[item.key], 4000);
+      }
+    });
+  }
+
+  // ── Genres Editor ───────────────────────────────────────────────────
+  genresItems: { key: string; label: string; section: string; value: string }[] = [];
+  genresByGroup: { id: string, icon: any, title: any, desc: any }[] = [];
+  genresLoading = false;
+  genresError   = '';
+  genresSaving  = false;
+  genresStatus  = '';
+
+  switchToGenres(): void {
+    this.tab = 'genres';
+    if (this.genresByGroup.length === 0) this.loadGenres();
+  }
+
+  loadGenres(): void {
+    this.genresLoading = true;
+    this.genresError   = '';
+    this.http.get<any[]>(`${API_BASE}/api/content`, { headers: this.headers }).subscribe({
+      next: items => {
+        this.genresItems = items.filter(i => i.section === 'Genres');
+        
+        // Group them into 4 genres
+        this.genresByGroup = [1,2,3,4].map(id => ({
+          id: id.toString(),
+          icon: this.genresItems.find(i => i.key === `genre_${id}_icon`),
+          title: this.genresItems.find(i => i.key === `genre_${id}_title`),
+          desc: this.genresItems.find(i => i.key === `genre_${id}_desc`)
+        })).filter(g => g.icon && g.title && g.desc);
+        
+        this.genresLoading = false;
+      },
+      error: () => {
+        this.genresError = 'Failed to load genres.';
+        this.genresLoading = false;
+      }
+    });
+  }
+
+  saveGenres(): void {
+    this.genresSaving = true;
+    this.genresStatus = '';
+    const updates: Record<string, string> = {};
+    for (const group of this.genresByGroup) {
+      updates[group.icon.key] = group.icon.value;
+      updates[group.title.key] = group.title.value;
+      updates[group.desc.key] = group.desc.value;
+    }
+
+    this.http.put(`${API_BASE}/api/content/bulk`, updates, { headers: this.headers }).subscribe({
+      next: () => {
+        this.genresSaving = false;
+        this.genresStatus = 'ok';
+        setTimeout(() => this.genresStatus = '', 3000);
+      },
+      error: () => {
+        this.genresSaving = false;
+        this.genresStatus = 'err';
+        setTimeout(() => this.genresStatus = '', 3000);
       }
     });
   }
