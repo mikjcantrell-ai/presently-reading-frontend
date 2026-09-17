@@ -592,15 +592,30 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
             
             <div class="af-group">
               <label class="af-label">Old Password</label>
-              <input class="af-input" type="password" [(ngModel)]="pwdOld" id="af-old-pwd" placeholder="Enter old password" />
+              <div style="position: relative; display: flex; align-items: center;">
+                <input class="af-input" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="pwdOld" id="af-old-pwd" placeholder="Enter old password" style="flex: 1; padding-right: 60px;" />
+                <button type="button" (click)="showPassword = !showPassword" style="position: absolute; right: 8px; background: none; border: none; font-size: 0.8rem; color: #888; cursor: pointer; padding: 4px; font-weight: bold; font-family: var(--font-sans);">
+                  {{ showPassword ? 'HIDE' : 'SHOW' }}
+                </button>
+              </div>
             </div>
             <div class="af-group">
               <label class="af-label">New Password</label>
-              <input class="af-input" type="password" [(ngModel)]="pwdNew" id="af-new-pwd" placeholder="Enter new password" />
+              <div style="position: relative; display: flex; align-items: center;">
+                <input class="af-input" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="pwdNew" id="af-new-pwd" placeholder="Enter new password" style="flex: 1; padding-right: 60px;" />
+                <button type="button" (click)="showPassword = !showPassword" style="position: absolute; right: 8px; background: none; border: none; font-size: 0.8rem; color: #888; cursor: pointer; padding: 4px; font-weight: bold; font-family: var(--font-sans);">
+                  {{ showPassword ? 'HIDE' : 'SHOW' }}
+                </button>
+              </div>
             </div>
             <div class="af-group">
               <label class="af-label">Confirm New Password</label>
-              <input class="af-input" type="password" [(ngModel)]="pwdConfirm" id="af-confirm-pwd" placeholder="Confirm new password" />
+              <div style="position: relative; display: flex; align-items: center;">
+                <input class="af-input" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="pwdConfirm" id="af-confirm-pwd" placeholder="Confirm new password" style="flex: 1; padding-right: 60px;" />
+                <button type="button" (click)="showPassword = !showPassword" style="position: absolute; right: 8px; background: none; border: none; font-size: 0.8rem; color: #888; cursor: pointer; padding: 4px; font-weight: bold; font-family: var(--font-sans);">
+                  {{ showPassword ? 'HIDE' : 'SHOW' }}
+                </button>
+              </div>
             </div>
             
             <div class="error-msg" *ngIf="pwdError">{{ pwdError }}</div>
@@ -1276,6 +1291,7 @@ export class AdminDashboardComponent implements OnInit {
   pwdNew = '';
   pwdConfirm = '';
   pwdLoading = false;
+  showPassword = false;
   pwdError = '';
   pwdSuccess = '';
 
