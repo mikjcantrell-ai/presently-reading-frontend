@@ -586,6 +586,15 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
           <div class="section-head">
             <h2>Settings</h2>
           </div>
+
+          <div class="author-form" style="max-width: 500px; margin-bottom: 24px;">
+            <h3 style="margin-top: 0; font-family: var(--font-serif); font-size: 1.1rem; color: #2a2017; margin-bottom: 6px;">Database Backup</h3>
+            <p class="content-intro" style="margin-bottom: 20px;">Download a complete backup of your SQLite database.</p>
+            <button class="save-btn" (click)="downloadBackup()" style="display: flex; align-items: center; gap: 8px;">
+              💾 Download Backup
+            </button>
+          </div>
+
           <div class="author-form" style="max-width: 500px;">
             <h3 style="margin-top: 0; font-family: var(--font-serif); font-size: 1.1rem; color: #2a2017; margin-bottom: 6px;">Change Password</h3>
             <p class="content-intro" style="margin-bottom: 20px;">Update your admin dashboard password.</p>
@@ -1354,6 +1363,25 @@ export class AdminDashboardComponent implements OnInit {
       error: (err) => {
         this.pwdLoading = false;
         this.pwdError = err.error?.error || 'Failed to change password.';
+      }
+    });
+  }
+
+  downloadBackup() {
+    this.http.get(`${API_BASE}/api/admin/backup`, { headers: this.headers, responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'presentlyreading-backup.db';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Backup failed', err);
+        alert('Failed to download database backup.');
       }
     });
   }
