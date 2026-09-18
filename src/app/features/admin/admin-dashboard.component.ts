@@ -154,9 +154,17 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
               <label class="full">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                   <span>Full Review (Markdown/HTML supported)</span>
-                  <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(newBook)" [disabled]="generatingReview">
-                    {{ generatingReview ? 'Generating...' : '✨ Auto-Generate Draft' }}
-                  </button>
+                  <div style="display: flex; gap: 8px;">
+                    <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(newBook, 'scratch')" [disabled]="generatingReview">
+                      {{ generatingReview ? 'Generating...' : '✨ Write Full Review' }}
+                    </button>
+                    <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(newBook, 'expand')" [disabled]="generatingReview">
+                      {{ generatingReview ? 'Generating...' : '✨ Expand from Notes' }}
+                    </button>
+                    <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(newBook, 'polish')" [disabled]="generatingReview">
+                      {{ generatingReview ? 'Generating...' : '✨ Polish Review' }}
+                    </button>
+                  </div>
                 </div>
                 <textarea [(ngModel)]="newBook.fullReview" rows="10" placeholder="Write your full book review here..."></textarea>
               </label>
@@ -225,9 +233,17 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
                   <label class="full">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                       <span>Full Review (Markdown/HTML supported)</span>
-                      <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(book)" [disabled]="generatingReview">
-                        {{ generatingReview ? 'Generating...' : '✨ Auto-Generate Draft' }}
-                      </button>
+                      <div style="display: flex; gap: 8px;">
+                        <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(book, 'scratch')" [disabled]="generatingReview">
+                          {{ generatingReview ? 'Generating...' : '✨ Write Full Review' }}
+                        </button>
+                        <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(book, 'expand')" [disabled]="generatingReview">
+                          {{ generatingReview ? 'Generating...' : '✨ Expand from Notes' }}
+                        </button>
+                        <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(book, 'polish')" [disabled]="generatingReview">
+                          {{ generatingReview ? 'Generating...' : '✨ Polish Review' }}
+                        </button>
+                      </div>
                     </div>
                     <textarea [(ngModel)]="book.fullReview" rows="10" placeholder="Write your full book review here..."></textarea>
                   </label>
@@ -2279,7 +2295,7 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
-  generateReview(book: Book) {
+  generateReview(book: Book, action: 'polish' | 'expand' | 'scratch') {
     if (!book.title || !book.authorName) {
       alert('Please fill in the Title and Author first!');
       return;
@@ -2289,7 +2305,8 @@ export class AdminDashboardComponent implements OnInit {
       title: book.title,
       author: book.authorName,
       genre: book.genre || 'General Fiction',
-      existingReview: book.fullReview || ''
+      existingReview: book.fullReview || '',
+      action: action
     };
     
     this.http.post<{generatedReview: string}>(`${API_BASE}/api/admin/ai/review`, payload, { headers: this.headers })
