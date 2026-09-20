@@ -47,7 +47,7 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
       <!-- Reviews Section -->
       <div class="books-section container">
         <div class="books-list">
-          <div class="book-row" *ngFor="let book of books; let i = index">
+          <div class="book-row" *ngFor="let book of readBooks; let i = index">
 
             <!-- Left: Artwork + number -->
             <div class="book-left">
@@ -97,6 +97,37 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
               </ng-template>
             </div>
 
+          </div>
+        </div>
+      </div>
+
+      <!-- To Be Read Section -->
+      <div class="books-section container" *ngIf="tbrBooks.length > 0" style="padding-top: 0;">
+        <div class="section-header center" style="margin-bottom: 40px;">
+          <span class="section-label">Up Next</span>
+          <h2 class="section-title">To Be <em>Read</em></h2>
+        </div>
+        <div class="books-list">
+          <div class="book-row" *ngFor="let book of tbrBooks; let i = index">
+            <!-- Left: Artwork + number -->
+            <div class="book-left">
+              <span class="book-num">{{ formatNum(i + 1) }}</span>
+              <div class="book-art">
+                <img [src]="book.imageUrl || 'assets/images/book_cover_placeholder.jpg'" [alt]="book.title + ' cover'" />
+              </div>
+            </div>
+
+            <!-- Middle: Info -->
+            <div class="book-middle">
+              <h2 class="book-title">{{ book.title }}</h2>
+              <p class="book-genre">{{ book.authorName }} &middot; {{ book.genre }}</p>
+              <p class="book-desc">{{ book.description }}</p>
+            </div>
+
+            <!-- Right: Actions -->
+            <div class="book-right">
+              <span class="coming-pill">Review coming soon...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -325,15 +356,18 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
   `]
 })
 export class BooksComponent implements OnInit {
-  books: Book[] = [];
+  readBooks: Book[] = [];
+  tbrBooks: Book[] = [];
   currentRead: Book | null = null;
 
   constructor(private bookService: BookService) {}
 
   ngOnInit(): void {
     this.bookService.getAllBooks().subscribe(books => {
-      this.books = books;
-      this.currentRead = books.find(b => b.featuredStatus) || null;
+      const sorted = books.sort((a, b) => a.displayOrder - b.displayOrder);
+      this.readBooks = sorted.filter(b => b.readingStatus === 'READ');
+      this.tbrBooks = sorted.filter(b => b.readingStatus === 'TBR');
+      this.currentRead = sorted.find(b => b.featuredStatus) || null;
     });
   }
 

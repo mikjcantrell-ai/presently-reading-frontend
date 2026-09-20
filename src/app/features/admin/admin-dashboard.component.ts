@@ -55,6 +55,9 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
         <button class="admin-tab" [class.active]="tab==='books'" (click)="tab='books'" id="books-tab">
           🎵 Books
         </button>
+        <button class="admin-tab" [class.active]="tab==='tbr'" (click)="tab='tbr'" id="tbr-tab">
+          📚 To Be Read
+        </button>
         <button class="admin-tab" [class.active]="tab==='quotes'" (click)="tab='quotes'" id="quotes-tab">
           📝 Quotes
         </button>
@@ -82,9 +85,9 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
       <div class="admin-body">
 
         <!-- ── SONGS TAB ─────────────────────────────────────────────────── -->
-        <div *ngIf="tab==='books'">
+        <div *ngIf="tab==='books' || tab==='tbr'">
           <div class="section-head">
-            <h2>Books</h2>
+            <h2>{{ tab === 'books' ? 'Books (Read & Reading)' : 'To Be Read List' }}</h2>
             <div style="display: flex; gap: 8px;">
               <button class="btn-import" (click)="bookImportOpen = true" id="import-btn">🔖 Import Books</button>
               <button class="btn-add" (click)="startNewBook()" id="add-book-btn">+ Add Book</button>
@@ -196,14 +199,14 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
 
           <!-- Books table -->
           <div class="books-list" *ngIf="!booksLoading" cdkDropList (cdkDropListDropped)="onBookDrop($event)">
-            <div class="books-bulk-actions" *ngIf="books.length > 0" style="display: flex; gap: 16px; align-items: center; padding: 12px; background: #fff; border: 1px solid #e8e0d0; border-radius: 6px; margin-bottom: 8px;">
+            <div class="books-bulk-actions" *ngIf="(tab === 'books' ? activeBooks : tbrBooks).length > 0" style="display: flex; gap: 16px; align-items: center; padding: 12px; background: #fff; border: 1px solid #e8e0d0; border-radius: 6px; margin-bottom: 8px;">
               <label class="checkbox-field" style="margin: 0; cursor: pointer;">
                 <input type="checkbox" [checked]="allSelected()" (change)="toggleAllSelected($event)" style="transform: scale(1.2); margin-right: 8px;" /> Select All
               </label>
               <button class="btn-danger-sm" *ngIf="hasSelected()" (click)="deleteSelectedBooks()">Delete Selected ({{ getSelectedCount() }})</button>
             </div>
             
-            <div class="book-row" *ngFor="let book of books" cdkDrag>
+            <div class="book-row" *ngFor="let book of (tab === 'books' ? activeBooks : tbrBooks)" cdkDrag>
               <div class="book-row-header" (click)="toggleBookEdit(book)">
                 <input type="checkbox" [(ngModel)]="book.selected" (click)="$event.stopPropagation()" style="margin-right: 12px; transform: scale(1.2);" />
                 <span class="drag-handle" cdkDragHandle>☰</span>
@@ -1275,9 +1278,11 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
   `]
 })
 export class AdminDashboardComponent implements OnInit {
-  tab: 'books' | 'quotes' | 'messages' | 'content' | 'genres' | 'news' | 'settings' | 'author' = 'books';
+  tab: 'books' | 'tbr' | 'quotes' | 'messages' | 'content' | 'genres' | 'news' | 'settings' | 'author' = 'books';
 
   books: Book[] = [];
+  activeBooks: Book[] = [];
+  tbrBooks: Book[] = [];
   booksLoading = false;
   booksError   = '';
   editingBookId: number | null = null;
@@ -1425,7 +1430,12 @@ export class AdminDashboardComponent implements OnInit {
     this.booksLoading = true;
     this.booksError   = '';
     this.http.get<Book[]>(`${API_BASE}/api/books`).subscribe({
-      next: s => { this.books = s; this.booksLoading = false; },
+      next: s => {
+        this.books = s.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+        this.activeBooks = this.books.filter(b => b.readingStatus !== 'TBR');
+        this.tbrBooks = this.books.filter(b => b.readingStatus === 'TBR');
+        this.booksLoading = false;
+      },
       error: () => { this.booksError = 'Failed to load books.'; this.booksLoading = false; }
     });
   }
@@ -1433,10 +1443,11 @@ export class AdminDashboardComponent implements OnInit {
   onBookDrop(event: CdkDragDrop<Book[]>): void {
     if (event.previousIndex === event.currentIndex) return;
     
-    moveItemInArray(this.books, event.previousIndex, event.currentIndex);
+    const list = this.tab === 'books' ? this.activeBooks : this.tbrBooks;
+    moveItemInArray(list, event.previousIndex, event.currentIndex);
     
     // Update display orders based on new position
-    this.books.forEach((book, index) => {
+    list.forEach((book, index) => {
       const newOrder = index + 1;
       if (book.displayOrder !== newOrder) {
         book.displayOrder = newOrder;
