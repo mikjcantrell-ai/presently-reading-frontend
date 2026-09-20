@@ -55,9 +55,6 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
         <button class="admin-tab" [class.active]="tab==='books'" (click)="tab='books'" id="books-tab">
           🎵 Books
         </button>
-        <button class="admin-tab" [class.active]="tab==='tbr'" (click)="tab='tbr'" id="tbr-tab">
-          📚 To Be Read
-        </button>
         <button class="admin-tab" [class.active]="tab==='quotes'" (click)="tab='quotes'" id="quotes-tab">
           📝 Quotes
         </button>
@@ -85,9 +82,9 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
       <div class="admin-body">
 
         <!-- ── SONGS TAB ─────────────────────────────────────────────────── -->
-        <div *ngIf="tab==='books' || tab==='tbr'">
+        <div *ngIf="tab==='books'">
           <div class="section-head">
-            <h2>{{ tab === 'books' ? 'Books (Read & Reading)' : 'To Be Read List' }}</h2>
+            <h2>Books</h2>
             <div style="display: flex; gap: 8px;">
               <button class="btn-import" (click)="bookImportOpen = true" id="import-btn">🔖 Import Books</button>
               <button class="btn-add" (click)="startNewBook()" id="add-book-btn">+ Add Book</button>
@@ -198,88 +195,136 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
           <div class="error-msg" *ngIf="booksError">{{ booksError }}</div>
 
           <!-- Books table -->
-          <div class="books-list" *ngIf="!booksLoading" cdkDropList (cdkDropListDropped)="onBookDrop($event)">
-            <div class="books-bulk-actions" *ngIf="(tab === 'books' ? activeBooks : tbrBooks).length > 0" style="display: flex; gap: 16px; align-items: center; padding: 12px; background: #fff; border: 1px solid #e8e0d0; border-radius: 6px; margin-bottom: 8px;">
+          <!-- Books Status Filters -->
+          <div class="status-filters" style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <button class="filter-btn" [class.active]="statusFilter === 'ALL'" (click)="statusFilter = 'ALL'">All</button>
+            <button class="filter-btn" [class.active]="statusFilter === 'READ'" (click)="statusFilter = 'READ'">Read</button>
+            <button class="filter-btn" [class.active]="statusFilter === 'CURRENTLY_READING'" (click)="statusFilter = 'CURRENTLY_READING'">Reading</button>
+            <button class="filter-btn" [class.active]="statusFilter === 'TBR'" (click)="statusFilter = 'TBR'">To Be Read</button>
+          </div>
+
+          <!-- Books table -->
+          <div class="books-table-wrapper" *ngIf="!booksLoading">
+            <div class="books-bulk-actions" *ngIf="filteredAndSortedBooks.length > 0" style="display: flex; gap: 16px; align-items: center; padding: 12px; background: #fff; border: 1px solid #e8e0d0; border-radius: 6px; margin-bottom: 8px;">
               <label class="checkbox-field" style="margin: 0; cursor: pointer;">
                 <input type="checkbox" [checked]="allSelected()" (change)="toggleAllSelected($event)" style="transform: scale(1.2); margin-right: 8px;" /> Select All
               </label>
               <button class="btn-danger-sm" *ngIf="hasSelected()" (click)="deleteSelectedBooks()">Delete Selected ({{ getSelectedCount() }})</button>
+              <span class="drag-hint" *ngIf="isDragEnabled()" style="margin-left: auto; font-size: 0.8rem; color: #888;">↕ Drag to reorder</span>
+              <span class="drag-hint" *ngIf="!isDragEnabled()" style="margin-left: auto; font-size: 0.8rem; color: #d32f2f;">Drag disabled while sorted or filtered</span>
             </div>
             
-            <div class="book-row" *ngFor="let book of (tab === 'books' ? activeBooks : tbrBooks)" cdkDrag>
-              <div class="book-row-header" (click)="toggleBookEdit(book)">
-                <input type="checkbox" [(ngModel)]="book.selected" (click)="$event.stopPropagation()" style="margin-right: 12px; transform: scale(1.2);" />
-                <span class="drag-handle" cdkDragHandle>☰</span>
-                <span class="book-order">{{ book.displayOrder }}</span>
-                <span class="book-title">{{ book.title }}</span>
-                <span class="book-genre">{{ book.genre }}</span>
-                <span class="book-year">{{ book.releaseYear }}</span>
-                <span *ngIf="book.purchaseUrl" title="Has Purchase Link" style="font-size: 1rem; color: #1db954; margin-right: 4px;">🔖</span>
-                <span class="status-badge" style="font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); text-transform: uppercase; margin-right: 12px; min-width: 80px; text-align: center;">
-                  {{ book.readingStatus === 'CURRENTLY_READING' ? 'Reading' : book.readingStatus === 'TBR' ? 'TBR' : 'Read' }}
-                </span>
-                <button class="btn-edit-sm">{{ editingBookId === book.id ? '▲ Close' : '✏ Edit' }}</button>
+            <div class="books-table" style="background: #fff; border: 1px solid #e8e0d0; border-radius: 6px; overflow: hidden;">
+              <!-- Table Header -->
+              <div class="table-header" style="display: grid; grid-template-columns: 40px 60px 2fr 1.5fr 1.5fr 60px 100px 80px; gap: 12px; padding: 12px; background: #fafaf8; border-bottom: 1px solid #e8e0d0; font-weight: bold; font-size: 0.85rem; color: #555;">
+                <div></div>
+                <div class="sortable-col" (click)="setSort('displayOrder')" style="cursor: pointer; user-select: none;">Order {{ sortColumn === 'displayOrder' ? (sortDirection === 'asc' ? '↑' : '↓') : '' }}</div>
+                <div class="sortable-col" style="display: flex; flex-direction: column; gap: 4px;">
+                  <span (click)="setSort('title')" style="cursor: pointer; user-select: none;">Title {{ sortColumn === 'title' ? (sortDirection === 'asc' ? '↑' : '↓') : '' }}</span>
+                  <input type="text" [(ngModel)]="columnFilters.title" placeholder="Search..." style="padding: 4px; font-size: 0.75rem; border: 1px solid #ccc; border-radius: 3px; font-weight: normal;" />
+                </div>
+                <div class="sortable-col" style="display: flex; flex-direction: column; gap: 4px;">
+                  <span (click)="setSort('authorName')" style="cursor: pointer; user-select: none;">Author {{ sortColumn === 'authorName' ? (sortDirection === 'asc' ? '↑' : '↓') : '' }}</span>
+                  <input type="text" [(ngModel)]="columnFilters.authorName" placeholder="Search..." style="padding: 4px; font-size: 0.75rem; border: 1px solid #ccc; border-radius: 3px; font-weight: normal;" />
+                </div>
+                <div class="sortable-col" style="display: flex; flex-direction: column; gap: 4px;">
+                  <span (click)="setSort('genre')" style="cursor: pointer; user-select: none;">Genre {{ sortColumn === 'genre' ? (sortDirection === 'asc' ? '↑' : '↓') : '' }}</span>
+                  <input type="text" [(ngModel)]="columnFilters.genre" placeholder="Search..." style="padding: 4px; font-size: 0.75rem; border: 1px solid #ccc; border-radius: 3px; font-weight: normal;" />
+                </div>
+                <div class="sortable-col" style="display: flex; flex-direction: column; gap: 4px;">
+                  <span (click)="setSort('releaseYear')" style="cursor: pointer; user-select: none;">Year {{ sortColumn === 'releaseYear' ? (sortDirection === 'asc' ? '↑' : '↓') : '' }}</span>
+                  <input type="text" [(ngModel)]="columnFilters.releaseYear" placeholder="Search..." style="padding: 4px; font-size: 0.75rem; border: 1px solid #ccc; border-radius: 3px; font-weight: normal;" />
+                </div>
+                <div class="sortable-col" (click)="setSort('readingStatus')" style="cursor: pointer; margin-top: auto; user-select: none;">Status {{ sortColumn === 'readingStatus' ? (sortDirection === 'asc' ? '↑' : '↓') : '' }}</div>
+                <div style="margin-top: auto;">Actions</div>
               </div>
 
-              <div class="book-edit-form" *ngIf="editingBookId === book.id">
-                <div class="form-grid">
-                  <label class="full">Cover Art
-                    <div class="image-upload-zone" [class.dragover]="isDragOver" 
-                         (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" 
-                         (drop)="onDrop($event, book)" (click)="fileInputEdit.click()">
-                      <img *ngIf="book.imageUrl" [src]="book.imageUrl" class="preview-img"/>
-                      <span *ngIf="!book.imageUrl" class="upload-hint">Drag & Drop Cover Art or Click to Upload</span>
-                      <input type="file" #fileInputEdit hidden (change)="onFileSelected($event, book)" accept="image/*"/>
-                      <div *ngIf="uploadingBookId === book.id" class="upload-overlay">Uploading...</div>
+              <!-- Table Body -->
+              <div cdkDropList [cdkDropListDisabled]="!isDragEnabled()" (cdkDropListDropped)="onBookDrop($event)">
+                <div class="table-row-wrapper" *ngFor="let book of filteredAndSortedBooks" cdkDrag>
+                  <div class="table-row" style="display: grid; grid-template-columns: 40px 60px 2fr 1.5fr 1.5fr 60px 100px 80px; gap: 12px; padding: 12px; border-bottom: 1px solid #f0f0f0; align-items: center;">
+                    <div>
+                      <input type="checkbox" [(ngModel)]="book.selected" style="transform: scale(1.2);" />
                     </div>
-                  </label>
-                  <label>Title *<input [(ngModel)]="book.title" /></label>
-                  <label>Genre<input [(ngModel)]="book.genre" /></label>
-                  <label>Release Year<input type="number" [(ngModel)]="book.releaseYear" /></label>
-                  <label>My Rating
-                    <div style="margin-top: 4px; margin-bottom: 8px;">
-                      <app-star-rating [rating]="book.adminRating || 0" [max]="5" [interactive]="true" (ratingClicked)="book.adminRating = $event"></app-star-rating>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span class="drag-handle" cdkDragHandle [style.opacity]="isDragEnabled() ? 1 : 0.3" [style.cursor]="isDragEnabled() ? 'grab' : 'default'">☰</span>
+                      <span class="book-order" style="font-size: 0.8rem; color: #888;">{{ book.displayOrder }}</span>
                     </div>
-                  </label>
-                  <label>Purchase URL<input [(ngModel)]="book.purchaseUrl" /></label>
-                  <label>Goodreads URL<input [(ngModel)]="book.goodreadsUrl" /></label>
-                  <label>Author<input [(ngModel)]="book.authorName" /></label>
-                  <label class="full">Description<textarea [(ngModel)]="book.description" rows="2"></textarea></label>
-                  <label class="full">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                      <span>Full Review (Markdown/HTML supported)</span>
-                      <div style="display: flex; gap: 8px;">
-                        <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(book, 'scratch')" [disabled]="generatingReview">
-                          {{ generatingReview ? 'Generating...' : '✨ Write Full Review' }}
-                        </button>
-                        <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(book, 'expand')" [disabled]="generatingReview">
-                          {{ generatingReview ? 'Generating...' : '✨ Expand from Notes' }}
-                        </button>
-                        <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(book, 'polish')" [disabled]="generatingReview">
-                          {{ generatingReview ? 'Generating...' : '✨ Polish Review' }}
-                        </button>
-                      </div>
+                    <div class="book-title" style="font-weight: 600; font-size: 0.95rem;">{{ book.title }} <span *ngIf="book.purchaseUrl" title="Has Purchase Link" style="color: #1db954;">🔖</span></div>
+                    <div class="book-author" style="font-size: 0.85rem; color: #666;">{{ book.authorName }}</div>
+                    <div class="book-genre" style="font-size: 0.85rem; color: #666;">{{ book.genre }}</div>
+                    <div class="book-year" style="font-size: 0.85rem; color: #666;">{{ book.releaseYear }}</div>
+                    <div>
+                      <span class="status-badge" style="font-size: 0.7rem; padding: 2px 6px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); text-transform: uppercase;">
+                        {{ book.readingStatus === 'CURRENTLY_READING' ? 'Reading' : book.readingStatus === 'TBR' ? 'TBR' : 'Read' }}
+                      </span>
                     </div>
-                    <textarea [(ngModel)]="book.fullReview" rows="10" placeholder="Write your full book review here..."></textarea>
-                  </label>
-                  <label>Display Order<input type="number" [(ngModel)]="book.displayOrder" /></label>
-                  <label>
-                    Reading Status
-                    <select [(ngModel)]="book.readingStatus" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-primary); font-size: 1rem; color: var(--text-dark);">
-                      <option value="READ">Read (Published)</option>
-                      <option value="CURRENTLY_READING">Currently Reading</option>
-                      <option value="TBR">To Be Read (TBR)</option>
-                    </select>
-                  </label>
+                    <div>
+                      <button class="btn-edit-sm" (click)="toggleBookEdit(book)">{{ editingBookId === book.id ? '▲ Close' : '✏ Edit' }}</button>
+                    </div>
+                  </div>
+
+                  <div class="book-edit-form" *ngIf="editingBookId === book.id" style="margin: 0 12px 12px 12px; background: #fafaf8; border-radius: 6px; border: 1px solid #e8e0d0; border-top: none;">
+                    <div class="form-grid">
+                      <label class="full">Cover Art
+                        <div class="image-upload-zone" [class.dragover]="isDragOver" 
+                             (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" 
+                             (drop)="onDrop($event, book)" (click)="fileInputEdit.click()">
+                          <img *ngIf="book.imageUrl" [src]="book.imageUrl" class="preview-img"/>
+                          <span *ngIf="!book.imageUrl" class="upload-hint">Drag & Drop Cover Art or Click to Upload</span>
+                          <input type="file" #fileInputEdit hidden (change)="onFileSelected($event, book)" accept="image/*"/>
+                          <div *ngIf="uploadingBookId === book.id" class="upload-overlay">Uploading...</div>
+                        </div>
+                      </label>
+                      <label>Title *<input [(ngModel)]="book.title" /></label>
+                      <label>Genre<input [(ngModel)]="book.genre" /></label>
+                      <label>Release Year<input type="number" [(ngModel)]="book.releaseYear" /></label>
+                      <label>My Rating
+                        <div style="margin-top: 4px; margin-bottom: 8px;">
+                          <app-star-rating [rating]="book.adminRating || 0" [max]="5" [interactive]="true" (ratingClicked)="book.adminRating = $event"></app-star-rating>
+                        </div>
+                      </label>
+                      <label>Purchase URL<input [(ngModel)]="book.purchaseUrl" /></label>
+                      <label>Goodreads URL<input [(ngModel)]="book.goodreadsUrl" /></label>
+                      <label>Author<input [(ngModel)]="book.authorName" /></label>
+                      <label class="full">Description<textarea [(ngModel)]="book.description" rows="2"></textarea></label>
+                      <label class="full">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                          <span>Full Review (Markdown/HTML supported)</span>
+                          <div style="display: flex; gap: 8px;">
+                            <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(book, 'scratch')" [disabled]="generatingReview">
+                              {{ generatingReview ? 'Generating...' : '✨ Write Full Review' }}
+                            </button>
+                            <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(book, 'expand')" [disabled]="generatingReview">
+                              {{ generatingReview ? 'Generating...' : '✨ Expand from Notes' }}
+                            </button>
+                            <button type="button" class="action-btn" style="background: var(--accent); color: white; border: none; padding: 4px 12px; font-size: 0.8rem;" (click)="generateReview(book, 'polish')" [disabled]="generatingReview">
+                              {{ generatingReview ? 'Generating...' : '✨ Polish Review' }}
+                            </button>
+                          </div>
+                        </div>
+                        <textarea [(ngModel)]="book.fullReview" rows="10" placeholder="Write your full book review here..."></textarea>
+                      </label>
+                      <label>Display Order<input type="number" [(ngModel)]="book.displayOrder" /></label>
+                      <label>
+                        Reading Status
+                        <select [(ngModel)]="book.readingStatus" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-primary); font-size: 1rem; color: var(--text-dark);">
+                          <option value="READ">Read (Published)</option>
+                          <option value="CURRENTLY_READING">Currently Reading</option>
+                          <option value="TBR">To Be Read (TBR)</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="form-actions">
+                      <button class="btn-import" (click)="fetchBookMetadata(book)" style="margin-right: auto;" [id]="'fetch-metadata-'+book.id">📖 Fetch Metadata</button>
+                      <button class="btn-save" (click)="updateBook(book)" [id]="'save-book-'+book.id">Save</button>
+                      <button class="btn-quotes" (click)="switchToQuotes(book.id!)" [id]="'edit-quotes-'+book.id">📝 Edit Quotes →</button>
+                      <button class="btn-danger" (click)="deleteBook(book)" [id]="'delete-book-'+book.id">Delete</button>
+                      <button class="btn-cancel" (click)="editingBookId=null">Cancel</button>
+                    </div>
+                    <div class="save-msg" *ngIf="bookSaveMsg[book.id!]">{{ bookSaveMsg[book.id!] }}</div>
+                  </div>
                 </div>
-                <div class="form-actions">
-                  <button class="btn-import" (click)="fetchBookMetadata(book)" style="margin-right: auto;" [id]="'fetch-metadata-'+book.id">📖 Fetch Metadata</button>
-                  <button class="btn-save" (click)="updateBook(book)" [id]="'save-book-'+book.id">Save</button>
-                  <button class="btn-quotes" (click)="switchToQuotes(book.id!)" [id]="'edit-quotes-'+book.id">📝 Edit Quotes →</button>
-                  <button class="btn-danger" (click)="deleteBook(book)" [id]="'delete-book-'+book.id">Delete</button>
-                  <button class="btn-cancel" (click)="editingBookId=null">Cancel</button>
-                </div>
-                <div class="save-msg" *ngIf="bookSaveMsg[book.id!]">{{ bookSaveMsg[book.id!] }}</div>
               </div>
             </div>
           </div>
@@ -1278,11 +1323,9 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
   `]
 })
 export class AdminDashboardComponent implements OnInit {
-  tab: 'books' | 'tbr' | 'quotes' | 'messages' | 'content' | 'genres' | 'news' | 'settings' | 'author' = 'books';
+  tab: 'books' | 'quotes' | 'messages' | 'content' | 'genres' | 'news' | 'settings' | 'author' = 'books';
 
   books: Book[] = [];
-  activeBooks: Book[] = [];
-  tbrBooks: Book[] = [];
   booksLoading = false;
   booksError   = '';
   editingBookId: number | null = null;
@@ -1290,6 +1333,59 @@ export class AdminDashboardComponent implements OnInit {
   generatingReview = false;
   newBook: Book | null = null;
   bookSaveMsg: Record<number, string> = {};
+
+  sortColumn: keyof Book = 'displayOrder';
+  sortDirection: 'asc' | 'desc' = 'asc';
+  statusFilter: 'ALL' | 'READ' | 'CURRENTLY_READING' | 'TBR' = 'ALL';
+  columnFilters = { title: '', authorName: '', genre: '', releaseYear: '' };
+
+  get filteredAndSortedBooks(): Book[] {
+    let result = [...this.books];
+    if (this.statusFilter !== 'ALL') {
+      result = result.filter(b => b.readingStatus === this.statusFilter);
+    }
+    if (this.columnFilters.title) {
+      result = result.filter(b => b.title.toLowerCase().includes(this.columnFilters.title.toLowerCase()));
+    }
+    if (this.columnFilters.authorName) {
+      result = result.filter(b => (b.authorName || '').toLowerCase().includes(this.columnFilters.authorName.toLowerCase()));
+    }
+    if (this.columnFilters.genre) {
+      result = result.filter(b => (b.genre || '').toLowerCase().includes(this.columnFilters.genre.toLowerCase()));
+    }
+    if (this.columnFilters.releaseYear) {
+      result = result.filter(b => (b.releaseYear || '').toString().includes(this.columnFilters.releaseYear));
+    }
+    result.sort((a, b) => {
+      let valA = a[this.sortColumn] || '';
+      let valB = b[this.sortColumn] || '';
+      if (typeof valA === 'string') valA = valA.toLowerCase();
+      if (typeof valB === 'string') valB = valB.toLowerCase();
+      if (valA < valB) return this.sortDirection === 'asc' ? -1 : 1;
+      if (valA > valB) return this.sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return result;
+  }
+
+  isDragEnabled(): boolean {
+    return this.sortColumn === 'displayOrder' && 
+           this.sortDirection === 'asc' && 
+           this.statusFilter === 'ALL' && 
+           !this.columnFilters.title && 
+           !this.columnFilters.authorName && 
+           !this.columnFilters.genre && 
+           !this.columnFilters.releaseYear;
+  }
+
+  setSort(col: keyof Book): void {
+    if (this.sortColumn === col) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortColumn = col;
+      this.sortDirection = 'asc';
+    }
+  }
 
   quotes: Quote[] = [];
   quotesLoading = false;
@@ -1432,8 +1528,6 @@ export class AdminDashboardComponent implements OnInit {
     this.http.get<Book[]>(`${API_BASE}/api/books`).subscribe({
       next: s => {
         this.books = s.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
-        this.activeBooks = this.books.filter(b => b.readingStatus !== 'TBR');
-        this.tbrBooks = this.books.filter(b => b.readingStatus === 'TBR');
         this.booksLoading = false;
       },
       error: () => { this.booksError = 'Failed to load books.'; this.booksLoading = false; }
@@ -1443,11 +1537,12 @@ export class AdminDashboardComponent implements OnInit {
   onBookDrop(event: CdkDragDrop<Book[]>): void {
     if (event.previousIndex === event.currentIndex) return;
     
-    const list = this.tab === 'books' ? this.activeBooks : this.tbrBooks;
-    moveItemInArray(list, event.previousIndex, event.currentIndex);
+    if (!this.isDragEnabled()) return;
+
+    moveItemInArray(this.books, event.previousIndex, event.currentIndex);
     
     // Update display orders based on new position
-    list.forEach((book, index) => {
+    this.books.forEach((book, index) => {
       const newOrder = index + 1;
       if (book.displayOrder !== newOrder) {
         book.displayOrder = newOrder;
@@ -1643,24 +1738,26 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   allSelected(): boolean {
-    return this.books.length > 0 && this.books.every(s => s.selected);
+    const list = this.filteredAndSortedBooks;
+    return list.length > 0 && list.every(s => s.selected);
   }
 
   hasSelected(): boolean {
-    return this.books.some(s => s.selected);
+    return this.filteredAndSortedBooks.some(s => s.selected);
   }
 
   getSelectedCount(): number {
-    return this.books.filter(s => s.selected).length;
+    return this.filteredAndSortedBooks.filter(s => s.selected).length;
   }
 
   toggleAllSelected(event: any): void {
     const checked = event.target.checked;
-    this.books.forEach(s => s.selected = checked);
+    this.filteredAndSortedBooks.forEach(s => s.selected = checked);
   }
 
   deleteSelectedBooks(): void {
-    const selected = this.books.filter(s => s.selected);
+    const list = this.filteredAndSortedBooks;
+    const selected = list.filter(s => s.selected);
     if (selected.length === 0) return;
     if (!confirm(`Are you sure you want to delete ${selected.length} books?`)) return;
 

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { Book } from '../../core/models';
 import { BookService } from '../../core/services/book.service';
 import { StarRatingComponent } from '../../shared/star-rating.component';
@@ -8,7 +9,7 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
 @Component({
   selector: 'app-music',
   standalone: true,
-  imports: [CommonModule, RouterLink, StarRatingComponent],
+  imports: [CommonModule, RouterLink, FormsModule, StarRatingComponent],
   template: `
     <div class="music-page">
       <!-- Page Header -->
@@ -17,37 +18,41 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
         <div class="page-header-overlay"></div>
         <div class="page-header-content container">
           <span class="section-label">Library</span>
-          <h1 class="section-title">Recent <em>Reads</em></h1>
+          <h1 class="section-title">My <em>Books</em></h1>
           <p class="section-desc">My latest literary adventures, reviewed and curated for your TBR pile.</p>
         </div>
       </div>
 
-      <!-- Featured Banner (Currently Reading) -->
-      <div class="album-banner" *ngIf="currentRead">
-        <div class="album-banner-inner container">
-          <div class="album-art-thumb">
-            <img [src]="currentRead.imageUrl || 'assets/images/book_cover_placeholder.jpg'" [alt]="currentRead.title + ' Cover'" />
+      <!-- Controls Section -->
+      <div class="container" style="padding-top: 40px;">
+        <div class="table-controls">
+          <div class="filter-group">
+            <button class="filter-btn" [class.active]="statusFilter === 'ALL'" (click)="statusFilter = 'ALL'">All</button>
+            <button class="filter-btn" [class.active]="statusFilter === 'READ'" (click)="statusFilter = 'READ'">Read</button>
+            <button class="filter-btn" [class.active]="statusFilter === 'CURRENTLY_READING'" (click)="statusFilter = 'CURRENTLY_READING'">Reading</button>
+            <button class="filter-btn" [class.active]="statusFilter === 'TBR'" (click)="statusFilter = 'TBR'">To Be Read</button>
           </div>
-          <div class="album-info">
-            <span class="album-eyebrow">Currently Reading</span>
-            <h2 class="album-name">{{ currentRead.title }}</h2>
-            <div class="album-meta">
-              <span>{{ currentRead.authorName }}</span>
-              <span class="meta-dot">&bull;</span>
-              <span>{{ currentRead.genre }}</span>
-            </div>
+          <div class="search-group">
+            <span class="sort-label">Sort by:</span>
+            <select class="sort-select" [(ngModel)]="sortColumn" (change)="setSort(sortColumn)">
+              <option value="displayOrder">Custom Order</option>
+              <option value="title">Title</option>
+              <option value="authorName">Author</option>
+              <option value="genre">Genre</option>
+              <option value="releaseYear">Year</option>
+            </select>
+            <button class="filter-btn" (click)="sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </button>
+            <input type="text" class="search-input" placeholder="Search books..." [(ngModel)]="searchQuery" />
           </div>
-          <a *ngIf="currentRead.goodreadsUrl" [href]="currentRead.goodreadsUrl" target="_blank" class="album-spotify-btn">
-            <span class="btn-icon">🔖</span>
-            Follow Updates on Goodreads
-          </a>
         </div>
       </div>
 
       <!-- Reviews Section -->
       <div class="books-section container">
         <div class="books-list">
-          <div class="book-row" *ngFor="let book of readBooks; let i = index">
+          <div class="book-row" *ngFor="let book of filteredAndSortedBooks; let i = index">
 
             <!-- Left: Artwork + number -->
             <div class="book-left">
@@ -60,28 +65,35 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
             <!-- Middle: Info -->
             <div class="book-middle">
               <h2 class="book-title">{{ book.title }}</h2>
-              <p class="book-genre">{{ book.authorName }} &middot; {{ book.genre }}</p>
-              <div class="book-ratings" style="margin-bottom: 12px;">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                  <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-dark); text-transform: uppercase;">My Rating:</span>
-                  <app-star-rating [rating]="book.adminRating || 0" [max]="5"></app-star-rating>
+              <p class="book-genre">{{ book.authorName }} &middot; {{ book.genre }} <span *ngIf="book.releaseYear">&middot; {{ book.releaseYear }}</span></p>
+              <p class="book-status" style="font-size: 0.75rem; font-weight: 700; color: var(--accent); text-transform: uppercase; margin-bottom: 8px;">
+                {{ book.readingStatus === 'CURRENTLY_READING' ? 'Currently Reading' : book.readingStatus === 'READ' ? 'Read' : 'To Be Read' }}
+              </p>
+              
+              <ng-container *ngIf="book.readingStatus !== 'TBR'">
+                <div class="book-ratings" style="margin-bottom: 12px;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-dark); text-transform: uppercase;">My Rating:</span>
+                    <app-star-rating [rating]="book.adminRating || 0" [max]="5"></app-star-rating>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-dark);">Reader's Rating:</span>
+                    <app-star-rating 
+                      [rating]="getReaderRating(book)" 
+                      [count]="book.readerRatingCount || 0"
+                      [interactive]="true"
+                      (ratingClicked)="rateBook(book, $event)">
+                    </app-star-rating>
+                  </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-dark);">Reader's Rating:</span>
-                  <app-star-rating 
-                    [rating]="getReaderRating(book)" 
-                    [count]="book.readerRatingCount || 0"
-                    [interactive]="true"
-                    (ratingClicked)="rateBook(book, $event)">
-                  </app-star-rating>
-                </div>
-              </div>
+              </ng-container>
+              
               <p class="book-desc">{{ book.description }}</p>
             </div>
 
             <!-- Right: Actions -->
             <div class="book-right">
-              <ng-container *ngIf="!book.featuredStatus; else comingSoon">
+              <ng-container *ngIf="book.readingStatus === 'READ' || book.readingStatus === 'CURRENTLY_READING'">
                 <a [href]="book.purchaseUrl" target="_blank" class="action-btn spotify" *ngIf="book.purchaseUrl">
                   Buy Book
                 </a>
@@ -91,43 +103,17 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
                 <a *ngIf="book.fullReview" [routerLink]="['/review', book.id]" class="action-btn" style="background-color: var(--accent); color: white; border-color: var(--accent);">
                   Read Review
                 </a>
+                <span *ngIf="!book.fullReview && !book.purchaseUrl" class="coming-pill">Review coming soon...</span>
               </ng-container>
-              <ng-template #comingSoon>
-                <span class="coming-pill">Review coming soon...</span>
-              </ng-template>
+              <ng-container *ngIf="book.readingStatus === 'TBR'">
+                 <span class="coming-pill">To Be Read</span>
+              </ng-container>
             </div>
 
           </div>
-        </div>
-      </div>
-
-      <!-- To Be Read Section -->
-      <div class="books-section container" *ngIf="tbrBooks.length > 0" style="padding-top: 0;">
-        <div class="section-header center" style="margin-bottom: 40px;">
-          <span class="section-label">Up Next</span>
-          <h2 class="section-title">To Be <em>Read</em></h2>
-        </div>
-        <div class="books-list">
-          <div class="book-row" *ngFor="let book of tbrBooks; let i = index">
-            <!-- Left: Artwork + number -->
-            <div class="book-left">
-              <span class="book-num">{{ formatNum(i + 1) }}</span>
-              <div class="book-art">
-                <img [src]="book.imageUrl || 'assets/images/book_cover_placeholder.jpg'" [alt]="book.title + ' cover'" />
-              </div>
-            </div>
-
-            <!-- Middle: Info -->
-            <div class="book-middle">
-              <h2 class="book-title">{{ book.title }}</h2>
-              <p class="book-genre">{{ book.authorName }} &middot; {{ book.genre }}</p>
-              <p class="book-desc">{{ book.description }}</p>
-            </div>
-
-            <!-- Right: Actions -->
-            <div class="book-right">
-              <span class="coming-pill">Review coming soon...</span>
-            </div>
+          
+          <div *ngIf="filteredAndSortedBooks.length === 0" style="padding: 40px; text-align: center; color: var(--text-mid); font-style: italic;">
+            No books found matching your criteria.
           </div>
         </div>
       </div>
@@ -172,6 +158,58 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
 
     /* Books Section */
     .books-section { padding: 60px 0; }
+
+    .table-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .filter-group {
+      display: flex;
+      gap: 8px;
+    }
+    .filter-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--taupe);
+      background: var(--white);
+      color: var(--text-dark);
+      border-radius: 4px;
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover { background: var(--cream); }
+    .filter-btn.active {
+      background: var(--accent);
+      color: var(--white);
+      border-color: var(--accent);
+    }
+
+    .search-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .sort-label {
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-mid);
+    }
+    .sort-select, .search-input {
+      padding: 8px 12px;
+      border: 1px solid var(--taupe);
+      border-radius: 4px;
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      background: var(--white);
+    }
+    .search-input { width: 200px; }
 
     .books-list { display: flex; flex-direction: column; gap: 0; }
 
@@ -278,73 +316,6 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
       color: var(--text-light);
     }
 
-    /* Featured Banner (Currently Reading) */
-    .album-banner {
-      background: var(--cream-dark);
-      border-bottom: 1px solid var(--taupe);
-      border-top: 1px solid var(--taupe);
-    }
-    .album-banner-inner {
-      display: flex;
-      align-items: center;
-      gap: 28px;
-      padding: 32px 0;
-      flex-wrap: wrap;
-    }
-    .album-art-thumb {
-      width: 100px;
-      height: 140px;
-      border-radius: 6px;
-      overflow: hidden;
-      flex-shrink: 0;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    }
-    .album-art-thumb img { width: 100%; height: 100%; object-fit: cover; }
-    .album-info { flex: 1; min-width: 0; }
-    .album-eyebrow {
-      display: block;
-      font-family: var(--font-sans);
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 6px;
-    }
-    .album-name {
-      font-family: var(--font-script);
-      font-size: 2rem;
-      color: var(--text-dark);
-      margin-bottom: 8px;
-    }
-    .album-meta {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      font-family: var(--font-sans);
-      font-size: 0.85rem;
-      color: var(--text-mid);
-      font-weight: 600;
-    }
-    .meta-dot { opacity: 0.5; }
-    .album-spotify-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 24px;
-      background: var(--accent);
-      color: var(--white);
-      border-radius: 4px;
-      font-family: var(--font-sans);
-      font-size: 0.82rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      transition: opacity 0.2s, transform 0.2s var(--ease-bounce), box-shadow 0.2s;
-      white-space: nowrap;
-    }
-    .album-spotify-btn:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
-    .btn-icon { font-size: 1.1rem; line-height: 1; }
 
     @media (max-width: 640px) {
       .book-row { grid-template-columns: auto 1fr; gap: 16px; }
@@ -356,19 +327,54 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
   `]
 })
 export class BooksComponent implements OnInit {
-  readBooks: Book[] = [];
-  tbrBooks: Book[] = [];
-  currentRead: Book | null = null;
+  books: Book[] = [];
+
+  sortColumn: keyof Book = 'displayOrder';
+  sortDirection: 'asc' | 'desc' = 'asc';
+  statusFilter: 'ALL' | 'READ' | 'CURRENTLY_READING' | 'TBR' = 'ALL';
+  searchQuery: string = '';
 
   constructor(private bookService: BookService) {}
 
   ngOnInit(): void {
     this.bookService.getAllBooks().subscribe(books => {
-      const sorted = books.sort((a, b) => a.displayOrder - b.displayOrder);
-      this.readBooks = sorted.filter(b => b.readingStatus === 'READ');
-      this.tbrBooks = sorted.filter(b => b.readingStatus === 'TBR');
-      this.currentRead = sorted.find(b => b.featuredStatus) || null;
+      this.books = books.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
     });
+  }
+
+  get filteredAndSortedBooks(): Book[] {
+    let result = [...this.books];
+    if (this.statusFilter !== 'ALL') {
+      result = result.filter(b => b.readingStatus === this.statusFilter);
+    }
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      result = result.filter(b => 
+        b.title.toLowerCase().includes(q) || 
+        (b.authorName || '').toLowerCase().includes(q) || 
+        (b.genre || '').toLowerCase().includes(q) ||
+        (b.releaseYear || '').toString().includes(q)
+      );
+    }
+    result.sort((a, b) => {
+      let valA = a[this.sortColumn] || '';
+      let valB = b[this.sortColumn] || '';
+      if (typeof valA === 'string') valA = valA.toLowerCase();
+      if (typeof valB === 'string') valB = valB.toLowerCase();
+      if (valA < valB) return this.sortDirection === 'asc' ? -1 : 1;
+      if (valA > valB) return this.sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return result;
+  }
+
+  setSort(col: keyof Book): void {
+    if (this.sortColumn === col) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortColumn = col;
+      this.sortDirection = 'asc';
+    }
   }
 
   formatNum(n: number): string {
