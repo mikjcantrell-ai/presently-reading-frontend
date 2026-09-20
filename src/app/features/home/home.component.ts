@@ -88,7 +88,7 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
             </div>
             <div class="track-info">
               <div *ngIf="book.adminRating" style="margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 0.7rem; font-weight: 700; color: var(--accent); text-transform: uppercase;">Admin Rating:</span>
+                <span style="font-size: 0.7rem; font-weight: 700; color: var(--accent); text-transform: uppercase;">My Rating:</span>
                 <app-star-rating [rating]="book.adminRating" [max]="5"></app-star-rating>
               </div>
               <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">

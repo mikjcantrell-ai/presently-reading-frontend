@@ -51,11 +51,11 @@ import { CommonModule } from '@angular/common';
       left: 0;
       width: 100%;
       height: 100%;
-      fill: var(--text-muted, #ccc);
+      fill: #b5b5b5; /* Darker base color */
       transition: transform 0.2s;
     }
     .star.filled {
-      fill: #ffd700; /* Gold */
+      fill: #f5c518; /* A slightly richer gold like IMDb */
     }
     .interactive .star-wrapper:hover .star {
       transform: scale(1.1);

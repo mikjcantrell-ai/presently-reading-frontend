@@ -33,7 +33,7 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
             <p *ngIf="book.releaseYear"><strong>Published:</strong> {{ book.releaseYear }}</p>
             
             <div *ngIf="book.adminRating" style="margin-top: 16px; margin-bottom: 8px;">
-              <p style="margin-bottom: 4px; font-size: 0.8rem; font-weight: 700; color: var(--accent); text-transform: uppercase;">Admin Rating</p>
+              <p style="margin-bottom: 4px; font-size: 0.8rem; font-weight: 700; color: var(--accent); text-transform: uppercase;">My Rating</p>
               <app-star-rating [rating]="book.adminRating" [max]="5"></app-star-rating>
             </div>
             
