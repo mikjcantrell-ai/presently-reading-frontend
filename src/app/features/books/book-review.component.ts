@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Book } from '../../core/models';
 import { BookService } from '../../core/services/book.service';
+import { StarRatingComponent } from '../../shared/star-rating.component';
 
 @Component({
   selector: 'app-book-review',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, StarRatingComponent],
   template: `
     <div class="review-page" *ngIf="book">
       <!-- Page Header -->
@@ -30,6 +31,21 @@ import { BookService } from '../../core/services/book.service';
           <div class="book-meta">
             <p><strong>Genre:</strong> {{ book.genre || 'TBD' }}</p>
             <p *ngIf="book.releaseYear"><strong>Published:</strong> {{ book.releaseYear }}</p>
+            
+            <div *ngIf="book.adminRating" style="margin-top: 16px; margin-bottom: 8px;">
+              <p style="margin-bottom: 4px; font-size: 0.8rem; font-weight: 700; color: var(--accent); text-transform: uppercase;">Admin Rating</p>
+              <app-star-rating [rating]="book.adminRating" [max]="5"></app-star-rating>
+            </div>
+            
+            <div style="margin-top: 12px; margin-bottom: 16px;">
+              <p style="margin-bottom: 4px; font-size: 0.8rem; font-weight: 700; color: var(--accent); text-transform: uppercase;">Reader's Rating</p>
+              <app-star-rating 
+                [rating]="getReaderRating(book)" 
+                [count]="book.readerRatingCount || 0"
+                [interactive]="true"
+                (ratingClicked)="rateBook(book, $event)">
+              </app-star-rating>
+            </div>
             <a *ngIf="book.purchaseUrl" [href]="book.purchaseUrl" target="_blank" class="action-btn spotify" style="margin-top: 16px; width: 100%; text-align: center;">
               Buy Book
             </a>
@@ -230,5 +246,29 @@ export class BookReviewComponent implements OnInit {
     } else {
       this.error = true;
     }
+  }
+
+  getReaderRating(book: Book): number {
+    if (!book.readerRatingCount || book.readerRatingCount === 0) return 0;
+    return book.readerRatingSum! / book.readerRatingCount;
+  }
+
+  rateBook(book: Book, score: number) {
+    const key = `rated_book_${book.id}`;
+    if (localStorage.getItem(key)) {
+      alert("You have already rated this book!");
+      return;
+    }
+    
+    this.bookService.rateBook(book.id, score).subscribe({
+      next: (updatedBook) => {
+        book.readerRatingSum = updatedBook.readerRatingSum;
+        book.readerRatingCount = updatedBook.readerRatingCount;
+        localStorage.setItem(key, 'true');
+      },
+      error: () => {
+        alert("Failed to submit rating.");
+      }
+    });
   }
 }

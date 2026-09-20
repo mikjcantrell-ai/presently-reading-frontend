@@ -11,6 +11,7 @@ interface Book {
   imageUrl: string; genre: string; releaseYear: number;
   authorName: string; featuredStatus: boolean; readingStatus?: string; displayOrder: number; description: string;
   fullReview?: string;
+  adminRating?: number;
   selected?: boolean;
 }
 interface Quote {
@@ -147,6 +148,7 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
               <label>Title *<input [(ngModel)]="newBook.title" placeholder="Book title" /></label>
               <label>Genre<input [(ngModel)]="newBook.genre" placeholder="Indie · Industrial Static · Moody Pop" /></label>
               <label>Release Year<input type="number" [(ngModel)]="newBook.releaseYear" /></label>
+              <label>Admin Rating (0-5)<input type="number" step="0.5" min="0" max="5" [(ngModel)]="newBook.adminRating" /></label>
               <label>Purchase URL<input [(ngModel)]="newBook.purchaseUrl" placeholder="https://amazon.com/..." /></label>
               <label>Goodreads URL<input [(ngModel)]="newBook.goodreadsUrl" placeholder="https://goodreads.com/..." /></label>
               <label>Author<input [(ngModel)]="newBook.authorName" placeholder="Author name" /></label>
@@ -226,6 +228,7 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
                   <label>Title *<input [(ngModel)]="book.title" /></label>
                   <label>Genre<input [(ngModel)]="book.genre" /></label>
                   <label>Release Year<input type="number" [(ngModel)]="book.releaseYear" /></label>
+                  <label>Admin Rating (0-5)<input type="number" step="0.5" min="0" max="5" [(ngModel)]="book.adminRating" /></label>
                   <label>Purchase URL<input [(ngModel)]="book.purchaseUrl" /></label>
                   <label>Goodreads URL<input [(ngModel)]="book.goodreadsUrl" /></label>
                   <label>Author<input [(ngModel)]="book.authorName" /></label>

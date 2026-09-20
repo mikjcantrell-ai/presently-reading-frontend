@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Book } from '../../core/models';
 import { BookService } from '../../core/services/book.service';
+import { StarRatingComponent } from '../../shared/star-rating.component';
 
 @Component({
   selector: 'app-music',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, StarRatingComponent],
   template: `
     <div class="music-page">
       <!-- Page Header -->
@@ -60,6 +61,21 @@ import { BookService } from '../../core/services/book.service';
             <div class="book-middle">
               <h2 class="book-title">{{ book.title }}</h2>
               <p class="book-genre">{{ book.authorName }} &middot; {{ book.genre }}</p>
+              <div class="book-ratings" style="margin-bottom: 12px;">
+                <div *ngIf="book.adminRating" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-dark);">Presently Reading's Rating:</span>
+                  <app-star-rating [rating]="book.adminRating" [max]="5"></app-star-rating>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-dark);">Reader's Rating:</span>
+                  <app-star-rating 
+                    [rating]="getReaderRating(book)" 
+                    [count]="book.readerRatingCount || 0"
+                    [interactive]="true"
+                    (ratingClicked)="rateBook(book, $event)">
+                  </app-star-rating>
+                </div>
+              </div>
               <p class="book-desc">{{ book.description }}</p>
             </div>
 
@@ -323,5 +339,29 @@ export class BooksComponent implements OnInit {
 
   formatNum(n: number): string {
     return n < 10 ? `0${n}` : `${n}`;
+  }
+
+  getReaderRating(book: Book): number {
+    if (!book.readerRatingCount || book.readerRatingCount === 0) return 0;
+    return book.readerRatingSum! / book.readerRatingCount;
+  }
+
+  rateBook(book: Book, score: number) {
+    const key = `rated_book_${book.id}`;
+    if (localStorage.getItem(key)) {
+      alert("You have already rated this book!");
+      return;
+    }
+    
+    this.bookService.rateBook(book.id, score).subscribe({
+      next: (updatedBook) => {
+        book.readerRatingSum = updatedBook.readerRatingSum;
+        book.readerRatingCount = updatedBook.readerRatingCount;
+        localStorage.setItem(key, 'true');
+      },
+      error: () => {
+        alert("Failed to submit rating.");
+      }
+    });
   }
 }

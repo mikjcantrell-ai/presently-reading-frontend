@@ -35,4 +35,9 @@ export class BookService {
   getBooksByGenre(genre: string): Observable<Book[]> {
     return this.http.get<Book[]>(`${this.BASE}/genre/${encodeURIComponent(genre)}`);
   }
+
+  /** Submit a reader rating for a book. */
+  rateBook(id: number, score: number): Observable<Book> {
+    return this.http.post<Book>(`${this.BASE}/${id}/rate?score=${score}`, {});
+  }
 }

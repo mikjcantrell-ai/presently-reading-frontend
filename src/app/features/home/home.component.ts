@@ -7,11 +7,12 @@ import { NewsletterService } from '../../core/services/newsletter.service';
 import { BookService } from '../../core/services/book.service';
 import { API_BASE } from '../../core/config/api.config';
 import { Book } from '../../core/models';
+import { StarRatingComponent } from '../../shared/star-rating.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, StarRatingComponent],
   template: `
     <!-- HERO -->
     <section id="home" class="hero">
@@ -86,7 +87,19 @@ import { Book } from '../../core/models';
               <img [src]="book.imageUrl || 'assets/images/book_cover.jpg'" [alt]="book.title" />
             </div>
             <div class="track-info">
-              <span class="track-number">★★★★★</span>
+              <div *ngIf="book.adminRating" style="margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 0.7rem; font-weight: 700; color: var(--accent); text-transform: uppercase;">Admin Rating:</span>
+                <app-star-rating [rating]="book.adminRating" [max]="5"></app-star-rating>
+              </div>
+              <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 0.7rem; font-weight: 700; color: var(--accent); text-transform: uppercase;">Reader's Rating:</span>
+                <app-star-rating 
+                  [rating]="getReaderRating(book)" 
+                  [count]="book.readerRatingCount || 0"
+                  [interactive]="true"
+                  (ratingClicked)="rateBook(book, $event)">
+                </app-star-rating>
+              </div>
               <h3 class="track-title">{{ book.title }}</h3>
               <p class="track-meta">{{ book.authorName }} · {{ book.genre }}</p>
               <p class="track-desc">{{ book.description }}</p>
@@ -728,6 +741,30 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.nlLoading = false;
         this.nlSuccess = true;
         this.nlMessage = "You're in! We'll be in touch soon.";
+      }
+    });
+  }
+
+  getReaderRating(book: Book): number {
+    if (!book.readerRatingCount || book.readerRatingCount === 0) return 0;
+    return book.readerRatingSum! / book.readerRatingCount;
+  }
+
+  rateBook(book: Book, score: number) {
+    const key = `rated_book_${book.id}`;
+    if (localStorage.getItem(key)) {
+      alert("You have already rated this book!");
+      return;
+    }
+    
+    this.bookService.rateBook(book.id, score).subscribe({
+      next: (updatedBook) => {
+        book.readerRatingSum = updatedBook.readerRatingSum;
+        book.readerRatingCount = updatedBook.readerRatingCount;
+        localStorage.setItem(key, 'true');
+      },
+      error: () => {
+        alert("Failed to submit rating.");
       }
     });
   }

@@ -18,6 +18,9 @@ export interface Book {
   displayOrder: number;
   description?: string;
   fullReview?: string;
+  adminRating?: number;
+  readerRatingSum?: number;
+  readerRatingCount?: number;
 }
 
 // ── Quote (mirrors com.presentlyreading.model.Quote) ───────────────────────────
