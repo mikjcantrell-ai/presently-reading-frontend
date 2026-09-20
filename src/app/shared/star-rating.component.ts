@@ -27,7 +27,7 @@ import { CommonModule } from '@angular/common';
         </svg>
 
       </div>
-      <span *ngIf="count !== undefined && count !== null" class="rating-count">({{ count }})</span>
+      <span *ngIf="count !== undefined && count > 0" class="rating-count">({{ count }})</span>
     </div>
   `,
   styles: [`
@@ -51,7 +51,7 @@ import { CommonModule } from '@angular/common';
       left: 0;
       width: 100%;
       height: 100%;
-      fill: #b5b5b5; /* Darker base color */
+      fill: #999999; /* Darker base color */
       transition: transform 0.2s;
     }
     .star.filled {

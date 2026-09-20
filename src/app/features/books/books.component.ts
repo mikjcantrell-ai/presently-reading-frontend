@@ -62,9 +62,9 @@ import { StarRatingComponent } from '../../shared/star-rating.component';
               <h2 class="book-title">{{ book.title }}</h2>
               <p class="book-genre">{{ book.authorName }} &middot; {{ book.genre }}</p>
               <div class="book-ratings" style="margin-bottom: 12px;">
-                <div *ngIf="book.adminRating" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                   <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-dark); text-transform: uppercase;">My Rating:</span>
-                  <app-star-rating [rating]="book.adminRating" [max]="5"></app-star-rating>
+                  <app-star-rating [rating]="book.adminRating || 0" [max]="5"></app-star-rating>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-dark);">Reader's Rating:</span>
