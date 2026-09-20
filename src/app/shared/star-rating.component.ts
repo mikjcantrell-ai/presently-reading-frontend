@@ -11,9 +11,10 @@ import { CommonModule } from '@angular/common';
          (mouseleave)="resetHover()">
       <div 
         *ngFor="let star of stars; let i = index" 
-        class="star-wrapper"
-        (mouseenter)="setHover(i + 1)"
-        (click)="rate(i + 1)">
+        class="star-wrapper">
+        
+        <div *ngIf="interactive" class="half left-half" (mouseenter)="setHover(i + 0.5)" (click)="rate(i + 0.5)"></div>
+        <div *ngIf="interactive" class="half right-half" (mouseenter)="setHover(i + 1)" (click)="rate(i + 1)"></div>
         
         <!-- Empty Star Base -->
         <svg class="star empty" viewBox="0 0 24 24">
@@ -55,11 +56,20 @@ import { CommonModule } from '@angular/common';
       transition: transform 0.2s;
     }
     .star.filled {
-      fill: #f5c518; /* A slightly richer gold like IMDb */
+      fill: #c29a00; /* 20% darker gold */
     }
     .interactive .star-wrapper:hover .star {
       transform: scale(1.1);
     }
+    .half {
+      position: absolute;
+      top: 0;
+      width: 50%;
+      height: 100%;
+      z-index: 10;
+    }
+    .left-half { left: 0; }
+    .right-half { right: 0; }
     .rating-count {
       margin-left: 6px;
       font-size: 0.85rem;

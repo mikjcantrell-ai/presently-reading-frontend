@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { API_BASE } from '../../core/config/api.config';
+import { StarRatingComponent } from '../../shared/star-rating.component';
 
 interface Book {
   id?: number; title: string; purchaseUrl: string; goodreadsUrl: string;
@@ -32,7 +33,7 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DatePipe, DragDropModule],
+  imports: [CommonModule, FormsModule, RouterLink, DatePipe, DragDropModule, StarRatingComponent],
   template: `
     <div class="admin-shell">
 
@@ -148,7 +149,11 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
               <label>Title *<input [(ngModel)]="newBook.title" placeholder="Book title" /></label>
               <label>Genre<input [(ngModel)]="newBook.genre" placeholder="Indie · Industrial Static · Moody Pop" /></label>
               <label>Release Year<input type="number" [(ngModel)]="newBook.releaseYear" /></label>
-              <label>My Rating (0-5)<input type="number" step="0.5" min="0" max="5" [(ngModel)]="newBook.adminRating" /></label>
+              <label>My Rating
+                <div style="margin-top: 4px; margin-bottom: 8px;">
+                  <app-star-rating [rating]="newBook.adminRating || 0" [max]="5" [interactive]="true" (ratingClicked)="newBook.adminRating = $event"></app-star-rating>
+                </div>
+              </label>
               <label>Purchase URL<input [(ngModel)]="newBook.purchaseUrl" placeholder="https://amazon.com/..." /></label>
               <label>Goodreads URL<input [(ngModel)]="newBook.goodreadsUrl" placeholder="https://goodreads.com/..." /></label>
               <label>Author<input [(ngModel)]="newBook.authorName" placeholder="Author name" /></label>
@@ -228,7 +233,11 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
                   <label>Title *<input [(ngModel)]="book.title" /></label>
                   <label>Genre<input [(ngModel)]="book.genre" /></label>
                   <label>Release Year<input type="number" [(ngModel)]="book.releaseYear" /></label>
-                  <label>My Rating (0-5)<input type="number" step="0.5" min="0" max="5" [(ngModel)]="book.adminRating" /></label>
+                  <label>My Rating
+                    <div style="margin-top: 4px; margin-bottom: 8px;">
+                      <app-star-rating [rating]="book.adminRating || 0" [max]="5" [interactive]="true" (ratingClicked)="book.adminRating = $event"></app-star-rating>
+                    </div>
+                  </label>
                   <label>Purchase URL<input [(ngModel)]="book.purchaseUrl" /></label>
                   <label>Goodreads URL<input [(ngModel)]="book.goodreadsUrl" /></label>
                   <label>Author<input [(ngModel)]="book.authorName" /></label>
