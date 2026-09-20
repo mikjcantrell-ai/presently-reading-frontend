@@ -30,7 +30,7 @@ import { SeoService } from './core/services/seo.service';
           </li>
           <li>
             <a routerLink="/library" routerLinkActive="active"
-               (click)="menuOpen=false">Recent Reads</a>
+               (click)="menuOpen=false">Books</a>
           </li>
           <li>
             <a routerLink="/quotes" routerLinkActive="active"
