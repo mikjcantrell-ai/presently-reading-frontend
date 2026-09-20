@@ -698,14 +698,19 @@ const SECTION_TYPES = ['VERSE','PRE_CHORUS','CHORUS','BRIDGE','OUTRO'];
                      placeholder="Indie · Industrial Static · Moody Pop · Rock" />
             </div>
             <div class="af-group">
-              <label class="af-label">Purchase URL</label>
-              <input class="af-input" [(ngModel)]="authorProfile.purchaseUrl" id="af-spotify"
+              <label class="af-label">Spotify URL</label>
+              <input class="af-input" [(ngModel)]="authorProfile.spotifyUrl" id="af-spotify"
                      placeholder="https://open.spotify.com/album/…" />
             </div>
             <div class="af-group">
               <label class="af-label">Instagram URL</label>
               <input class="af-input" [(ngModel)]="authorProfile.instagramUrl" id="af-instagram"
                      placeholder="https://instagram.com/presentlyreading" />
+            </div>
+            <div class="af-group">
+              <label class="af-label">YouTube URL</label>
+              <input class="af-input" [(ngModel)]="authorProfile.youtubeUrl" id="af-youtube"
+                     placeholder="https://youtube.com/@presentlyreading" />
             </div>
             <div class="af-group">
               <label class="af-label">Facebook URL</label>
@@ -2180,7 +2185,7 @@ export class AdminDashboardComponent implements OnInit {
   // ── Author Profile ─────────────────────────────────────────────────────────
   authorProfile: {
     name: string; websiteUrl: string; contactEmail: string; tagline: string;
-    purchaseUrl: string; instagramUrl: string; facebookUrl: string;
+    spotifyUrl: string; instagramUrl: string; facebookUrl: string; youtubeUrl: string;
   } | null = null;
   authorLoading = false;
   authorError   = '';
@@ -2202,8 +2207,9 @@ export class AdminDashboardComponent implements OnInit {
           websiteUrl:   p.websiteUrl   ?? '',
           contactEmail: p.contactEmail ?? '',
           tagline:      p.tagline      ?? '',
-          purchaseUrl:   p.purchaseUrl   ?? '',
+          spotifyUrl:   p.spotifyUrl   ?? '',
           instagramUrl: p.instagramUrl ?? '',
+          youtubeUrl:   p.youtubeUrl   ?? '',
           facebookUrl:  p.facebookUrl  ?? '',
         };
         this.authorLoading = false;
@@ -2227,8 +2233,9 @@ export class AdminDashboardComponent implements OnInit {
             websiteUrl:   updated.websiteUrl   ?? '',
             contactEmail: updated.contactEmail ?? '',
             tagline:      updated.tagline      ?? '',
-            purchaseUrl:   updated.purchaseUrl   ?? '',
+            spotifyUrl:   updated.spotifyUrl   ?? '',
             instagramUrl: updated.instagramUrl ?? '',
+            youtubeUrl:   updated.youtubeUrl   ?? '',
             facebookUrl:  updated.facebookUrl  ?? '',
           };
           this.authorSaving = false;
