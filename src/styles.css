@@ -76,7 +76,7 @@ a { text-decoration: none; color: inherit; }
   margin-bottom: 12px;
 }
 
-.section-label.light { color: var(--accent); }
+.section-label.light { color: var(--cream); opacity: 0.8; }
 
 .section-title {
   font-family: var(--font-serif);
@@ -92,8 +92,8 @@ a { text-decoration: none; color: inherit; }
   color: var(--accent);
 }
 
-.section-title.light { color: var(--text-dark); }
-.section-title.light em { color: var(--accent); }
+.section-title.light { color: var(--cream); }
+.section-title.light em { color: var(--cream-dark, #F1E5D1); }
 
 .section-desc {
   font-family: var(--font-sans);
@@ -103,7 +103,7 @@ a { text-decoration: none; color: inherit; }
   line-height: 1.7;
 }
 
-.section-desc.light { color: var(--text-mid); }
+.section-desc.light { color: var(--cream); opacity: 0.9; }
 
 .section-header.center {
   text-align: center;

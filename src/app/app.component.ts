@@ -9,7 +9,7 @@ import { SeoService } from './core/services/seo.service';
   imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
   template: `
     <!-- ── Global Navigation Bar ──────────────────────────────────────────── -->
-    <nav class="navbar" [class.scrolled]="scrolled" *ngIf="!isAdminRoute()">
+    <nav class="navbar" [class.scrolled]="scrolled" [class.dark-hero]="isDarkHeroPage" *ngIf="!isAdminRoute()">
       <div class="navbar-inner">
 
         <!-- Brand / Logo -->
@@ -139,6 +139,14 @@ import { SeoService } from './core/services/seo.service';
       padding: 4px 0;
       text-shadow: none;
     }
+    .navbar.dark-hero:not(.scrolled) .navbar-links a {
+      color: var(--white);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    }
+    .navbar.dark-hero:not(.scrolled) .logo-serif {
+      color: var(--white);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    }
     .navbar.scrolled .navbar-links a {
       color: var(--text-mid);
       text-shadow: none;
@@ -153,6 +161,9 @@ import { SeoService } from './core/services/seo.service';
     }
     .navbar-links a:hover,
     .navbar-links a.active { color: var(--accent); }
+    .navbar.dark-hero:not(.scrolled) .navbar-links a:hover,
+    .navbar.dark-hero:not(.scrolled) .navbar-links a.active { color: var(--white); }
+    
     .navbar-links a:hover::after,
     .navbar-links a.active::after { width: 100%; }
 
@@ -176,6 +187,9 @@ import { SeoService } from './core/services/seo.service';
     }
     .navbar.scrolled .hamburger span {
       background: var(--text-dark);
+    }
+    .navbar.dark-hero:not(.scrolled) .hamburger span {
+      background: var(--white);
     }
     .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
     .hamburger.open span:nth-child(2) { opacity: 0; }
@@ -258,6 +272,10 @@ export class AppComponent implements OnInit {
   menuOpen = false;
 
   constructor(private seo: SeoService, private router: Router) {}
+
+  get isDarkHeroPage(): boolean {
+    return this.router.url.startsWith('/contact');
+  }
 
   isAdminRoute(): boolean {
     return this.router.url.startsWith('/admin');
